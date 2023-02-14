@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="font-medium leading-tight text-3xl mt-0 mb-2 text-blue-600">Wydawanie zestawu:</h1>
+
+<div class="align-middle">
+  <div class="bg-yellow-200">
+
+   <form method="post" action="{% url 'form' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" class="btn btn-primary btn-block py-4 bg-blue-400" value="Wydaj zestaw">
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}

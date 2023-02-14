@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="font-medium leading-tight text-3xl mt-0 mb-2 text-blue-600">Wydane zestawy pracownikom:</h1>
+    <div class="overflow-hidden rounded-lg border border-gray-200 shadow-md m-5">
+        <table class="w-full border-collapse bg-white text-left text-sm text-gray-500">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-4 font-medium text-gray-900">Zestaw BHP</th>
+              <th scope="col" class="px-6 py-4 font-medium text-gray-900">Dla stanowiska</th>
+              <th scope="col" class="px-6 py-4 font-medium text-gray-900">Komu wydany</th>
+              <th scope="col" class="px-6 py-4 font-medium text-gray-900">Kiedy wydany</th>
+              <th scope="col" class="px-6 py-4 font-medium text-gray-900">Koszt zestawu</th>
+              <th scope="col" class="px-6 py-4 font-medium text-gray-900">Szczegóły zestawu</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 border-t border-gray-100">
+
+          {% for set in protectiveclothessetsreleased %}
+          <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 justify-left">
+                <span
+                  class="font-semibold text-green-600" >
+                  {{ set.pc_set.name }}
+                </span>
+              </td>
+                    <td class="px-6 py-4 justify-left">
+                <span
+                  class="font-semibold text-green-600" >
+                  {{ set.employee.position }}
+                </span>
+              </td>
+              <td class="px-6 py-4 justify-left">
+                <span
+                  class="font-semibold text-blue-600" >
+                  {{ set.employee.first_name }} {{ set.employee.last_name }}
+                </span>
+              </td>
+              <td class="px-6 py-4 justify-left">
+                <span
+                  class="font-semibold text-red-600" >
+                  {{ set.release_date}}
+                </span>
+              </td>
+              <td class="px-6 py-4 justify-left">
+                <span
+                  class="font-semibold text-red-600" >
+                  {{ set.pc_set.price_of_set}}
+                </span>
+              </td>
+              <td class="px-6 py-4 justify-left">
+                <span
+                  class="font-semibold text-green-600" >
+                  <a href="{% url 'protective_clothes_set_detail' set.pc_set.id %}">Informacje o zestawie</a>
+                </span>
+              </td>
+            </tr>
+
+          {% endfor %}
+
+          </tbody>
+        </table>
+      </div>
+
+{% endblock %}
