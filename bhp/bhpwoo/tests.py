@@ -145,4 +145,142 @@ class PageTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, expected_url='/', status_code=302)
 
-   
+    def test_employee_detail_page_available_by_name(self):
+        """
+        Check if detail page for Employee opens for two created objects
+        """
+        url = reverse('employee_detail', args=[self.obj2.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        url = reverse('employee_detail', args=[self.obj3.id])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+    def test_employee_detail_page_template_name_correct(self):
+        """
+        Check if detail page for Employee use proper template
+        """
+        url = reverse('employee_detail', args=[self.obj1.id])
+        response = self.client.get(url)
+        self.assertTemplateUsed(response, "employee_detail.html")
+
+    def test_employee_detail_page_template_content(self):
+        """
+        Check if detail page for Employee contains particular texts
+        """
+        url = reverse('employee_detail', args=[self.obj1.id])
+        response = self.client.get(url)
+        self.assertContains(response, "Szczegółowe informacje o pracowniku:")
+        self.assertContains(response, "Bolesław")
+        self.assertContains(response, "Baczuk")
+
+
+class EmployeeModelTest(TestCase):
+    """
+    This test class allow to check if creating new Employee objects works correct
+    """
+
+    @classmethod
+    def setUpTestData(cls):
+        """
+        Setup method ads new employee and position objects for further tests
+        """
+        position = Position.objects.create(position_type="ET")
+        cls.employee = Employee.objects.create(first_name="Adam", last_name="Kaziuk", sex="M", age=45,
+                                               position=position)
+
+    def test_model_content(self):
+        """
+        Test method checks if particular fields have proper values
+        """
+        self.assertEqual(self.employee.first_name, "Adam")
+        self.assertEqual(self.employee.last_name, "Kaziuk")
+        self.assertEqual(self.employee.sex, "M")
+        self.assertEqual(self.employee.age, 45)
+
+    def test_url_exists_at_correct_location(self):
+        """
+        Test method checks if location '/' is correct and page opens properly
+        """
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+
+    def test_homepage(self):
+        """
+        Test method checks if location 'home' is correct, page opens properly and contains used before text values
+        """
+        response = self.client.get(reverse("home"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "employee_list.html")
+        self.assertContains(response, "Adam")
+        self.assertContains(response, "Kaziuk")
+
+
+class LogInTest(TestCase):
+    """
+    This test checks login (with good credentials), logout, and again login (but with wrong credentials)
+    """
+
+    def setUp(self):
+        self.credentials = {
+            'username': 'admin2',
+            'password': 'pass2'}
+
+        User.objects.create_user(**self.credentials)
+
+        self.wrong_credentials = {
+            'username': 'admin23543sdfasdfds',
+            'password': 'pass534543dfsdfgsdf'}
+
+    def test_login(self):
+        response = self.client.post('/login/', self.credentials, follow=True)
+        self.assertTrue(response.context['user'].is_active)
+        response_logout = self.client.get('/logout/', follow=True)
+        response2 = self.client.post('/login/', self.wrong_credentials, follow=True)
+        self.assertFalse(response2.context['user'].is_active)
+
+
+@pytest.fixture
+def create_user(db, django_user_model):
+    """
+    Create user fixture for further tests
+    """
+
+    def make_user(**kwargs):
+        kwargs['username'] = 'admin2'
+        kwargs['password'] = 'pass2'
+        return django_user_model.objects.create(**kwargs)
+
+    return make_user
+
+
+@pytest.mark.django_db
+def test_employee_create(create_user):
+    """
+    Tests if model is created properly by checking number of employees
+    """
+    position = Position.objects.create(position_type="ET")
+    Employee.objects.create(first_name="Bolesław", last_name="Baczuk", sex="M", age=75, position=position)
+    Employee.objects.create(first_name="Andrzej", last_name="Bania", sex="M", age=75, position=position)
+    Employee.objects.create(first_name="Wojtek", last_name="Kacen", sex="M", age=75, position=position)
+    assert Employee.objects.count() == 3
+
+
+@pytest.mark.django_db
+def test_employee_view(client):
+    """
+    Checks Employee list view
+    """
+    url = reverse('home')
+    response = client.get(url)
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_pcs_view(client):
+    """
+    Checks protection clothes sets view
+    """
+    url = reverse('protective_clothes_sets')
+    response = client.get(url)
+    assert response.status_code == 200
