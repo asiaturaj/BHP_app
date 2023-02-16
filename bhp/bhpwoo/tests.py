@@ -9,23 +9,18 @@ import pytest
 
 class PageTest(TestCase):
     """
-    This class have tests that mostly check if page opens correctly, use proper template, contains text or is available by name
+    This class have tests that check if page opens correctly, use proper template, contains text or is available by name
     """
-
     def setUp(self):
         """
         Setup that creates objects for test database
         """
         position = Position.objects.create(position_type="ET")
-        self.obj1 = Employee.objects.create(first_name="Bolesław", last_name="Baczuk", sex="M", age=75,
-                                            position=position)
-        self.obj2 = Employee.objects.create(first_name="Andrzej", last_name="Banicki", sex="M", age=44,
-                                            position=position)
+        self.obj1 = Employee.objects.create(first_name="Bolesław", last_name="Baczuk", sex="M", age=75, position=position)
+        self.obj2 = Employee.objects.create(first_name="Andrzej", last_name="Banicki", sex="M", age=44, position=position)
         position2 = Position.objects.create(position_type="EL")
-        self.obj3 = Employee.objects.create(first_name="Marek", last_name="Jagodziński", sex="M", age=33,
-                                            position=position2)
-        self.obj4 = Employee.objects.create(first_name="Krzysztof", last_name="Baniuk", sex="M", age=29,
-                                            position=position2)
+        self.obj3 = Employee.objects.create(first_name="Marek", last_name="Jagodziński", sex="M", age=33, position=position2)
+        self.obj4 = Employee.objects.create(first_name="Krzysztof", last_name="Baniuk", sex="M", age=29, position=position2)
 
     def test_home_page(self):
         """
@@ -132,14 +127,14 @@ class PageTest(TestCase):
 
     def test_login_form_url_available_by_name(self):
         """
-        Checks if login form page is available by name
+        Checks if login form page is available by name, page redirects us to new url
         """
         response = self.client.get(reverse("form"))
         self.assertEqual(response.status_code, 302)
 
     def test_logout_page(self):
         """
-        Tests if logout page is opening and checks if status code is OK (200)
+        Tests if logout functionality works and checks if status code is 302
         """
         response = self.client.get('/logout/')
         self.assertEqual(response.status_code, 302)
@@ -179,15 +174,13 @@ class EmployeeModelTest(TestCase):
     """
     This test class allow to check if creating new Employee objects works correct
     """
-
     @classmethod
-    def setUpTestData(cls):
+    def setUp(cls):
         """
         Setup method ads new employee and position objects for further tests
         """
         position = Position.objects.create(position_type="ET")
-        cls.employee = Employee.objects.create(first_name="Adam", last_name="Kaziuk", sex="M", age=45,
-                                               position=position)
+        cls.employee = Employee.objects.create(first_name="Adam", last_name="Kaziuk", sex="M", age=45, position=position)
 
     def test_model_content(self):
         """
@@ -220,7 +213,6 @@ class LogInTest(TestCase):
     """
     This test checks login (with good credentials), logout, and again login (but with wrong credentials)
     """
-
     def setUp(self):
         self.credentials = {
             'username': 'admin2',
@@ -236,34 +228,52 @@ class LogInTest(TestCase):
         response = self.client.post('/login/', self.credentials, follow=True)
         self.assertTrue(response.context['user'].is_active)
         response_logout = self.client.get('/logout/', follow=True)
+        self.assertFalse(response_logout.context['user'].is_active)
         response2 = self.client.post('/login/', self.wrong_credentials, follow=True)
         self.assertFalse(response2.context['user'].is_active)
 
 
 @pytest.fixture
-def create_user(db, django_user_model):
+def create_employee():
     """
-    Create user fixture for further tests
-    """
-
-    def make_user(**kwargs):
-        kwargs['username'] = 'admin2'
-        kwargs['password'] = 'pass2'
-        return django_user_model.objects.create(**kwargs)
-
-    return make_user
-
-
-@pytest.mark.django_db
-def test_employee_create(create_user):
-    """
-    Tests if model is created properly by checking number of employees
+    Create Employee for further tests
     """
     position = Position.objects.create(position_type="ET")
     Employee.objects.create(first_name="Bolesław", last_name="Baczuk", sex="M", age=75, position=position)
-    Employee.objects.create(first_name="Andrzej", last_name="Bania", sex="M", age=75, position=position)
-    Employee.objects.create(first_name="Wojtek", last_name="Kacen", sex="M", age=75, position=position)
+    Employee.objects.create(first_name="Andrzej", last_name="Nowicki", sex="M", age=37, position=position)
+    Employee.objects.create(first_name="Wojtek", last_name="Kacen", sex="M", age=44, position=position)
+
+
+@pytest.mark.django_db
+def test_employee_count(create_employee):
+    """
+    Tests if models were created properly by checking number of employees
+    """
     assert Employee.objects.count() == 3
+
+
+@pytest.mark.django_db
+def test_employee_count2(create_employee):
+    """
+    Tests if models were created properly by checking number of employees, after adding another Employee
+    """
+    position = Position.objects.create(position_type="EL")
+    Employee.objects.create(first_name="Piotr", last_name="Mazny", sex="M", age=38, position=position)
+    assert Employee.objects.count() > 3
+
+
+@pytest.mark.django_db
+def test_employee_contains(create_employee):
+    """
+    Tests if models were created properly by checking field values
+    """
+    employee = Employee.objects.filter(first_name='Andrzej').first()
+    assert employee.last_name == "Nowicki"
+    assert employee.sex == "M"
+    assert employee.age == 37
+    employee2 = Employee.objects.filter(first_name='Bolesław').first()
+    assert employee2.last_name == "Baczuk"
+    assert employee2.position.position_type == 'ET'
 
 
 @pytest.mark.django_db
@@ -274,6 +284,7 @@ def test_employee_view(client):
     url = reverse('home')
     response = client.get(url)
     assert response.status_code == 200
+    assert response.context["request"].path == "/"
 
 
 @pytest.mark.django_db
@@ -284,3 +295,24 @@ def test_pcs_view(client):
     url = reverse('protective_clothes_sets')
     response = client.get(url)
     assert response.status_code == 200
+    assert response.context["request"].path == "/protective-clothes-sets/"
+
+
+@pytest.mark.django_db
+def test_form_view(client):
+    """
+    Checks form view that is only for logged-in users. Redirection code 302 is expected.
+    """
+    url = reverse('form')
+    response = client.get(url)
+    assert response.status_code == 302
+
+
+@pytest.mark.django_db
+def test_pcs_released_view(client):
+    """
+    Checks 'protective_clothes_sets_released' view that is only for logged-in users. Redirection code 302 is expected.
+    """
+    url = reverse('protective_clothes_sets_released')
+    response = client.get(url)
+    assert response.status_code == 302
